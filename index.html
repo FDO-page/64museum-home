@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>六四记忆博物馆</title>
+    <style>
+        :root {
+            --background-color: #f0f0f0;
+            --text-color: #333;
+            --overlay-color: rgba(255, 255, 255, 0.5);
+            --transition-duration: 1.5s;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #222;
+                --text-color: #f0f0f0;
+                --overlay-color: rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .gallery {
+            position: relative;
+            height: 70vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .image-item {
+            position: absolute;
+            background-size: cover;
+            background-position: center;
+            transition: all var(--transition-duration) ease;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-item.active {
+            width: 60%;
+            height: 80%;
+            z-index: 2;
+            opacity: 1;
+            filter: blur(0) brightness(1);
+        }
+
+        .image-item.left, .image-item.right {
+            width: 40%;
+            height: 60%;
+            filter: blur(5px) brightness(0.7);
+            z-index: 1;
+            opacity: 0.7;
+        }
+
+        .image-item.left {
+            transform: translateX(-60%) scale(0.8);
+        }
+
+        .image-item.right {
+            transform: translateX(60%) scale(0.8);
+        }
+
+        .image-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 3;
+            opacity: 0;
+            transition: opacity var(--transition-duration) ease;
+        }
+
+        .image-item.active .image-text {
+            opacity: 1;
+        }
+
+        .description {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity var(--transition-duration) ease;
+            white-space: pre-wrap;
+            width: 60%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (max-width: 768px) {
+            .description {
+                width: 100%;
+            }
+        }
+
+        .description.active {
+            opacity: 1;
+        }
+
+        .fog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--overlay-color), transparent);
+            pointer-events: none;
+            z-index: 10;
+            animation: fogAnimation 10s infinite alternate;
+        }
+
+        @keyframes fogAnimation {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .gallery {
+                height: auto;
+                flex-direction: column;
+            }
+
+            .image-container {
+                position: relative;
+                flex-direction: column;
+                height: auto;
+            }
+
+            .image-item {
+                position: relative;
+                width: 100% !important;
+                height: 300px !important;
+                margin-bottom: 20px;
+                opacity: 1 !important;
+                transform: none !important;
+                filter: none !important;
+            }
+
+            .image-item.left, .image-item.right {
+                display: none;
+            }
+
+            .description {
+                max-height: none;
+                opacity: 1;
+            }
+        }
+        .welcome-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .welcome-content {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .welcome-content.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .welcome-content h2 {
+            margin-top: 0;
+            color: var(--text-color);
+        }
+
+        .welcome-content p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .welcome-content button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            background-color: var(--text-color);
+            color: var(--background-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .welcome-content button:hover {
+            background-color: var(--overlay-color);
+        }
+
+        .blur {
+            filter: blur(5px);
+            transition: filter 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-modal" id="welcomeModal">
+        <div class="welcome-content">
+            <h2>欢迎来到六四记忆博物馆</h2>
+            <p>使用说明：</p>
+            <ul>
+                <li>点击图片左侧区域查看上一张图片</li>
+                <li>点击图片右侧区域查看下一张图片</li>
+                <li>每张图片下方会显示相关描述</li>
+            </ul>
+            <p>其他说明：</p>
+            <ul>
+                <li>本网站并未拥有所陈列的图片版权</li>
+                <li>本网站不使用AI绘图和修图，保证真实性，但可能有水印</li>
+            </ul>
+            <button onclick="closeWelcomeModal()">知道了</button>
+        </div>
+    </div>
+    <div class="container" id="mainContainer">
+    <div class="fog"></div>
+    <div class="container">
+        <div class="gallery">
+            <div class="image-container" id="imageContainer"></div>
+        </div>
+        <div class="description" id="description"></div>
+    </div>
+
+    <script>
+        const images = [
+            { url: 'https://s2.loli.net/2024/08/20/iRarzkl8fQAGexp.jpg', text: '六四记忆博物馆', description: '', link:'https://example.com' },
+            { url: 'https://s2.loli.net/2024/08/20/rF5G16SWJMh9yLe.jpg', text: '六四记忆博物馆·历史的伤口', description: '在记忆的深处，有一片迷雾，\n遮蔽了真相，模糊了历史。\n但在迷雾中，我们仍然可以听到，\n那一声声的呼唤，\n 那一片片的哀伤。' },
+            { url: 'https://s2.loli.net/2024/08/20/5q9Ygp6tCySOEr4.jpg', text: '序言', description: '六四事件，或称天安门事件，发生在1989年春季，是中国现代史上一个深刻而复杂的记忆。那时，万众齐聚在天安门广场，年轻的学生们怀揣着对民主与自由的渴望，呼喊着口号，拉着横幅，梦想着一个更加美好的未来。\n\n广场上，晨曦中的旗帜飘扬，似在诉说着人们心中那份燃烧的热情与希望。广场的每一个角落都弥漫着青春的气息，讨论着政治、经济和社会的变革。人们在这里相遇、交流，交融，仿佛整个国家的命运都在这一刻汇聚。\n\n时光流逝，这份希望却在残酷的镇压中化为泡影。1989年6月3日至4日，军队出动，坦克的履带碾过那片曾经满怀梦想的土地，机枪扫射过那抗议学生誓死保卫的自由的土地。血与泪的交织，如一幅惨痛的画卷，铭刻在历史的记忆中。无数生命在那一夜消逝，家庭破碎，理想破灭。\n\n尽管如此，六四事件仍在许多人心中留下了模糊而又深刻的印记。人们在回忆中，时常感受到一种难以言喻的痛苦与坚韧。那早被遗忘的名字，那未被书写的故事，仍在历史的缝隙中低语，提醒着人们珍视自由与和平的宝贵。\n\n六四事件的记忆是复杂的，它既是对理想的追求，也是对历史的反思。在当今社会，面对不同的声音与思潮，我们更应铭记这段历史，以便在未来的路上，继续追寻那份属于每一个人的自由与尊严。\n\n\n\n' },
+            { url: 'https://s2.loli.net/2024/08/20/6IAJ2LSQK4WZamc.jpg', text: '第一章·历史的涟漪', description: '風在耳邊說，六月\n六月是張黑名單\n我提前離席\n請注意告別方式\n那些詞的嘆息\n\n——北島《六月》' },
+            { url: 'https://s2.loli.net/2024/08/20/hP1CXD743KW8f2F.jpg', text: '', description: '1986年学潮平息、1987年胡耀邦下台后，中国的政治改革完全停滞，而经济改革也遇上困难。知识界、民主派人士批判政府的声浪越发强烈。1989年1月6日，天体物理学家方励之致信邓小平，内文如下：\n\n「今年是中华人民共和国成立的第40年，也是五四运动的第70年，围绕着40年和70年，一定会有不少纪念活动，但是比之回顾过去，更多的人可能更关心今天，更关心未来，期待着两个纪念日会带来新的希望。\n\n鉴于此，我诚恳地向您建议，在这两个日子即将到来之际，在全国实行大赦，特别是释放魏京生以及所有类似的政治犯。我想，无论对魏京生本人如何评定，释放他这样的已经服刑大约十年的人，是符合人道的，是会促进良好的社会气氛的。\n\n今年恰好又是法国大革命200周年，不论怎样看由它所标志的自由、平等、博爱、人权已受到人类的普遍尊重。因此，我再次诚恳地希望您考虑我的建议，给未来增添新的希望。」\n\n此封公开信在知识界引发一连串回响，随后大批知识分子数次大规模联合上书、公开要求中央关注人权。与此同时，各国报纸亦广为刊载信件内容，引发国际关注。\n\n六四镇压之后，这封公开信成为当局指控方励之为幕后黑手的罪证之一。\n\n参考资料：《方励之文集》、《中国改革年代的政治斗争》、BBC中文网' },
+            { url: 'https://s2.loli.net/2024/08/20/O8clTwuVqNFMSeR.jpg', text: '', description: '1989年2月，天体物理学家方励之发表《中国的失望和希望》一文，文章开头如此写道：「1989年是社会主义中国成立的第40年，同时它又是五四运动的70年。 这两个纪念日，可能正好象征着中国的失望和希望。」\n\n随后，方励之表示40年问题的根源在于社会主义制度，尽管改革10年带来变化，但从镇压西单民主墙开始，便能预感当局并不打算推动政治改革。 然而，潜在的冲突一直存在于社会中，当局认为社会主义是人类最民主的社会仅是一种欺骗。 如今，中国的希望在于越来越多人摆脱对当局的盲目希望，民主不再是口号，而是对当局的压力。 他呼吁当局应逐步接受政治民主、经济自由的改革。\n\n文末，方励之满怀希望写道：「中国的民主已走过很长的艰难的路，看来还将走相当长的艰难的路，也许要十年，也许要一代人，或更长。 但是，无论如何，民主的趋势在中国已经形成，很难再完全逆转了。 民主是争取来的，不是恩赐的。 这是五四运动以来的历史，这也是四十年来的历史，这也一定会是今后几十年中的历史。 正因此，我在被许多失望所困扰的今天，对未来仍然抱定了希望。」\n\n此信中文版在香港媒体刊登， 英文版则在美国 The New York Review（《纽约书评》）刊登，引起国际关注。 3月29日，王丹等一群推动「民主沙龙」活动的同学，于北京大学三角地张贴文章复印本，在校园掀起波澜，打破了八六学潮后的两年沉寂\n\n\n\n' },
+            { url: 'https://s2.loli.net/2024/08/20/JOZqcCzUQxHb6Fn.jpg', text: '', description: '1989年2月13日，在诗人北岛的发起、陈军出面下，北京文化界33人联署《致人大常委会及中共中央公开信》，回应一个多月前方励之的呼吁，支持在1949建政40周年暨五四运动70周年之际，赦免政治犯。\n\n公开信发出后，政府以新华社记者访问司法部负责人的形式作出反驳：「陈军等人发起写信提出要求释放魏京生，其实质是制造舆论，对政府施加压力，干涉国家的司法审判。」\n\n此信引发知识界对改革与民主的广泛讨论，成为酝酿八九学运的关键事件之一。\n' },
+            { url: 'https://s2.loli.net/2024/08/20/iRarzkl8fQAGexp.jpg', text: '海洋', description: '广阔的海洋\n波涛汹涌', link:'https://example.com' },
+        ];
+
+        let currentIndex = 1;
+        let canSwitchImage = false;
+        let isChanging = false;
+
+        function createImageElement(image, className) {
+            const div = document.createElement('div');
+            div.className = `image-item ${className}`;
+            div.style.backgroundImage = `url(${image.url})`;
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'image-text';
+            textDiv.textContent = image.text;
+            div.appendChild(textDiv);
+
+            return div;
+        }
+
+        function updateGallery() {
+            const container = document.getElementById('imageContainer');
+            const description = document.getElementById('description');
+            
+            const prevIndex = (currentIndex - 1 + images.length) % images.length;
+            const nextIndex = (currentIndex + 1) % images.length;
+
+            const prevElement = createImageElement(images[prevIndex], 'left');
+            const activeElement = createImageElement(images[currentIndex], 'active');
+            const nextElement = createImageElement(images[nextIndex], 'right');
+
+            container.innerHTML = '';
+            container.appendChild(prevElement);
+            container.appendChild(activeElement);
+            container.appendChild(nextElement);
+
+            description.textContent = images[currentIndex].description;
+            description.classList.add('active');
+        }
+
+        function showWelcomeModal() {
+            document.getElementById('welcomeModal').style.display = 'flex';
+            document.getElementById('mainContainer').classList.add('blur');
+            setTimeout(() => {
+                document.querySelector('.welcome-content').classList.add('show');
+            }, 10);
+        }
+
+        function closeWelcomeModal() {
+            document.querySelector('.welcome-content').classList.remove('show');
+            setTimeout(() => {
+                document.getElementById('welcomeModal').style.display = 'none';
+                document.getElementById('mainContainer').classList.remove('blur');
+                canSwitchImage = true;
+            }, 300);
+        }
+
+        function changeImage(direction) {
+            if (!canSwitchImage || isChanging) return;
+
+            const newIndex = (currentIndex + direction + images.length) % images.length;
+            
+            // Check if the new index is the first or last image
+            if (newIndex === 0 || newIndex === images.length - 1) {
+                window.open(images[newIndex].link, '_blank');
+                return;
+            }
+
+            isChanging = true;
+
+            const container = document.getElementById('imageContainer');
+            const description = document.getElementById('description');
+            
+            const currentActive = container.querySelector('.active');
+            const targetElement = direction > 0 ? container.querySelector('.right') : container.querySelector('.left');
+            const oppositeElement = direction > 0 ? container.querySelector('.left') : container.querySelector('.right');
+
+            description.classList.remove('active');
+
+            currentActive.style.opacity = '0.7';
+            currentActive.style.filter = 'blur(5px) brightness(0.7)';
+            currentActive.style.width = '40%';
+            currentActive.style.height = '60%';
+            currentActive.style.transform = `translateX(${direction > 0 ? '-60%' : '60%'}) scale(0.8)`;
+
+            targetElement.style.opacity = '1';
+            targetElement.style.filter = 'blur(0) brightness(1)';
+            targetElement.style.width = '60%';
+            targetElement.style.height = '80%';
+            targetElement.style.transform = 'translateX(0) scale(1)';
+            targetElement.style.zIndex = '2';
+
+            oppositeElement.style.opacity = '0';
+            oppositeElement.style.transform = `translateX(${direction > 0 ? '-120%' : '120%'}) scale(0.8)`;
+
+            setTimeout(() => {
+                currentIndex = newIndex;
+                updateGallery();
+                isChanging = false;
+            }, 1500);
+        }
+
+        document.addEventListener('click', (event) => {
+            if (!canSwitchImage) return;
+
+            const rect = document.querySelector('.gallery').getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            if (x < rect.width / 2) {
+                changeImage(-1);
+            } else {
+                changeImage(1);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (!canSwitchImage) return;
+
+            if (event.key === 'ArrowLeft') {
+                changeImage(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeImage(1);
+            }
+        });
+
+        updateGallery();
+        window.addEventListener('load', showWelcomeModal);
+    </script>
+</body>
+</html>
