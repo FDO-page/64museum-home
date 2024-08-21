@@ -10,6 +10,7 @@
             --text-color: #333;
             --overlay-color: rgba(255, 255, 255, 0.5);
             --transition-duration: 1.5s;
+            --sidebar-width: 300px;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -27,12 +28,14 @@
             background-color: var(--background-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            transition: margin-left 0.3s;
         }
 
         .gallery {
@@ -121,12 +124,6 @@
             margin-right: auto;
         }
 
-        @media (max-width: 768px) {
-            .description {
-                width: 100%;
-            }
-        }
-
         .description.active {
             opacity: 1;
         }
@@ -146,6 +143,63 @@
         @keyframes fogAnimation {
             0% { opacity: 0.3; }
             100% { opacity: 0.7; }
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: var(--sidebar-width);
+            height: 100%;
+            background-color: var(--background-color);
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            z-index: 998;
+            transition: left 0.3s;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+
+        .menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            background-color: var(--background-color);
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
         }
 
         @media (max-width: 768px) {
@@ -177,8 +231,19 @@
             .description {
                 max-height: none;
                 opacity: 1;
+                width: 100%;
+            }
+
+            .sidebar {
+                width: 100%;
+                left: -100%;
+            }
+
+            .sidebar.open {
+                left: 0;
             }
         }
+
         .welcome-modal {
             position: fixed;
             top: 0;
@@ -249,23 +314,38 @@
     <div class="welcome-modal" id="welcomeModal">
         <div class="welcome-content">
             <h2>欢迎来到六四记忆博物馆</h2>
-            <p>使用说明：</p>
+            <p>使用说明:</p>
             <ul>
                 <li>点击图片左侧区域查看上一张图片</li>
                 <li>点击图片右侧区域查看下一张图片</li>
                 <li>每张图片下方会显示相关描述</li>
+                <li>点击左上角菜单按钮打开目录</li>
             </ul>
-            <p>其他说明：</p>
+            <p>其他说明:</p>
             <ul>
                 <li>本网站并未拥有所陈列的图片版权</li>
-                <li>本网站不使用AI绘图和修图，保证真实性，但可能有水印</li>
+                <li>本网站不使用AI绘图和修图,保证真实性,因此可能有水印</li>
+                <li>需要中断(不建议)时请记好页面对应目录</li>
             </ul>
             <button onclick="closeWelcomeModal()">知道了</button>
         </div>
     </div>
+    <button class="menu-button" onclick="toggleSidebar()">☰</button>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <h2>目录</h2>
+            <ul id="tableOfContents">
+                <!-- Table of contents will be dynamically generated here -->
+            </ul>
+            <h3>其他章节</h3>
+            <ul>
+                <li><a href="#" onclick="openChapter('chapter2')">第二章·悼念与抗议</a></li>
+                <li><a href="#" onclick="openChapter('chapter3')">第三章·黑夜与黎明</a></li>
+            </ul>
+        </div>
+    </div>
     <div class="container" id="mainContainer">
-    <div class="fog"></div>
-    <div class="container">
+        <div class="fog"></div>
         <div class="gallery">
             <div class="image-container" id="imageContainer"></div>
         </div>
@@ -274,19 +354,20 @@
 
     <script>
         const images = [
-            { url: 'https://s2.loli.net/2024/08/20/iRarzkl8fQAGexp.jpg', text: '六四记忆博物馆', description: '', link:'https://example.com' },
-            { url: 'https://s2.loli.net/2024/08/20/rF5G16SWJMh9yLe.jpg', text: '六四记忆博物馆·历史的伤口', description: '在记忆的深处，有一片迷雾，\n遮蔽了真相，模糊了历史。\n但在迷雾中，我们仍然可以听到，\n那一声声的呼唤，\n 那一片片的哀伤。' },
-            { url: 'https://s2.loli.net/2024/08/20/5q9Ygp6tCySOEr4.jpg', text: '序言', description: '六四事件，或称天安门事件，发生在1989年春季，是中国现代史上一个深刻而复杂的记忆。那时，万众齐聚在天安门广场，年轻的学生们怀揣着对民主与自由的渴望，呼喊着口号，拉着横幅，梦想着一个更加美好的未来。\n\n广场上，晨曦中的旗帜飘扬，似在诉说着人们心中那份燃烧的热情与希望。广场的每一个角落都弥漫着青春的气息，讨论着政治、经济和社会的变革。人们在这里相遇、交流，交融，仿佛整个国家的命运都在这一刻汇聚。\n\n时光流逝，这份希望却在残酷的镇压中化为泡影。1989年6月3日至4日，军队出动，坦克的履带碾过那片曾经满怀梦想的土地，机枪扫射过那抗议学生誓死保卫的自由的土地。血与泪的交织，如一幅惨痛的画卷，铭刻在历史的记忆中。无数生命在那一夜消逝，家庭破碎，理想破灭。\n\n尽管如此，六四事件仍在许多人心中留下了模糊而又深刻的印记。人们在回忆中，时常感受到一种难以言喻的痛苦与坚韧。那早被遗忘的名字，那未被书写的故事，仍在历史的缝隙中低语，提醒着人们珍视自由与和平的宝贵。\n\n六四事件的记忆是复杂的，它既是对理想的追求，也是对历史的反思。在当今社会，面对不同的声音与思潮，我们更应铭记这段历史，以便在未来的路上，继续追寻那份属于每一个人的自由与尊严。\n\n\n\n' },
-            { url: 'https://s2.loli.net/2024/08/20/6IAJ2LSQK4WZamc.jpg', text: '第一章·历史的涟漪', description: '風在耳邊說，六月\n六月是張黑名單\n我提前離席\n請注意告別方式\n那些詞的嘆息\n\n——北島《六月》' },
-            { url: 'https://s2.loli.net/2024/08/20/hP1CXD743KW8f2F.jpg', text: '', description: '1986年学潮平息、1987年胡耀邦下台后，中国的政治改革完全停滞，而经济改革也遇上困难。知识界、民主派人士批判政府的声浪越发强烈。1989年1月6日，天体物理学家方励之致信邓小平，内文如下：\n\n「今年是中华人民共和国成立的第40年，也是五四运动的第70年，围绕着40年和70年，一定会有不少纪念活动，但是比之回顾过去，更多的人可能更关心今天，更关心未来，期待着两个纪念日会带来新的希望。\n\n鉴于此，我诚恳地向您建议，在这两个日子即将到来之际，在全国实行大赦，特别是释放魏京生以及所有类似的政治犯。我想，无论对魏京生本人如何评定，释放他这样的已经服刑大约十年的人，是符合人道的，是会促进良好的社会气氛的。\n\n今年恰好又是法国大革命200周年，不论怎样看由它所标志的自由、平等、博爱、人权已受到人类的普遍尊重。因此，我再次诚恳地希望您考虑我的建议，给未来增添新的希望。」\n\n此封公开信在知识界引发一连串回响，随后大批知识分子数次大规模联合上书、公开要求中央关注人权。与此同时，各国报纸亦广为刊载信件内容，引发国际关注。\n\n六四镇压之后，这封公开信成为当局指控方励之为幕后黑手的罪证之一。\n\n参考资料：《方励之文集》、《中国改革年代的政治斗争》、BBC中文网' },
-            { url: 'https://s2.loli.net/2024/08/20/O8clTwuVqNFMSeR.jpg', text: '', description: '1989年2月，天体物理学家方励之发表《中国的失望和希望》一文，文章开头如此写道：「1989年是社会主义中国成立的第40年，同时它又是五四运动的70年。 这两个纪念日，可能正好象征着中国的失望和希望。」\n\n随后，方励之表示40年问题的根源在于社会主义制度，尽管改革10年带来变化，但从镇压西单民主墙开始，便能预感当局并不打算推动政治改革。 然而，潜在的冲突一直存在于社会中，当局认为社会主义是人类最民主的社会仅是一种欺骗。 如今，中国的希望在于越来越多人摆脱对当局的盲目希望，民主不再是口号，而是对当局的压力。 他呼吁当局应逐步接受政治民主、经济自由的改革。\n\n文末，方励之满怀希望写道：「中国的民主已走过很长的艰难的路，看来还将走相当长的艰难的路，也许要十年，也许要一代人，或更长。 但是，无论如何，民主的趋势在中国已经形成，很难再完全逆转了。 民主是争取来的，不是恩赐的。 这是五四运动以来的历史，这也是四十年来的历史，这也一定会是今后几十年中的历史。 正因此，我在被许多失望所困扰的今天，对未来仍然抱定了希望。」\n\n此信中文版在香港媒体刊登， 英文版则在美国 The New York Review（《纽约书评》）刊登，引起国际关注。 3月29日，王丹等一群推动「民主沙龙」活动的同学，于北京大学三角地张贴文章复印本，在校园掀起波澜，打破了八六学潮后的两年沉寂\n\n\n\n' },
-            { url: 'https://s2.loli.net/2024/08/20/JOZqcCzUQxHb6Fn.jpg', text: '', description: '1989年2月13日，在诗人北岛的发起、陈军出面下，北京文化界33人联署《致人大常委会及中共中央公开信》，回应一个多月前方励之的呼吁，支持在1949建政40周年暨五四运动70周年之际，赦免政治犯。\n\n公开信发出后，政府以新华社记者访问司法部负责人的形式作出反驳：「陈军等人发起写信提出要求释放魏京生，其实质是制造舆论，对政府施加压力，干涉国家的司法审判。」\n\n此信引发知识界对改革与民主的广泛讨论，成为酝酿八九学运的关键事件之一。\n' },
-            { url: 'https://s2.loli.net/2024/08/20/iRarzkl8fQAGexp.jpg', text: '海洋', description: '广阔的海洋\n波涛汹涌', link:'https://example.com' },
+            { url: 'https://picsum.photos/id/1019/1000/600', text: '海洋', description: '广阔的海洋\n波涛汹涌', link:'' },
+            { url: 'https://s2.loli.net/2024/08/20/rF5G16SWJMh9yLe.jpg', text: '六四记忆博物馆·历史的伤口', description: '在记忆的深处，有一片迷雾，\n遮蔽了真相，模糊了历史。\n但在迷雾中，我们仍然可以听到，\n那一声声的呼唤，\n 那一片片的哀伤。', name:'封面·历史的伤口' },
+            { url: 'https://s2.loli.net/2024/08/20/5q9Ygp6tCySOEr4.jpg', text: '序言', description: '六四事件，或称天安门事件，发生在1989年春季，是中国现代史上一个深刻而复杂的记忆。那时，万众齐聚在天安门广场，年轻的学生们怀揣着对民主与自由的渴望，呼喊着口号，拉着横幅，梦想着一个更加美好的未来。\n\n广场上，晨曦中的旗帜飘扬，似在诉说着人们心中那份燃烧的热情与希望。广场的每一个角落都弥漫着青春的气息，讨论着政治、经济和社会的变革。人们在这里相遇、交流，交融，仿佛整个国家的命运都在这一刻汇聚。\n\n时光流逝，这份希望却在残酷的镇压中化为泡影。1989年6月3日至4日，军队出动，坦克的履带碾过那片曾经满怀梦想的土地，机枪扫射过那抗议学生誓死保卫的自由的土地。血与泪的交织，如一幅惨痛的画卷，铭刻在历史的记忆中。无数生命在那一夜消逝，家庭破碎，理想破灭。\n\n尽管如此，六四事件仍在许多人心中留下了模糊而又深刻的印记。人们在回忆中，时常感受到一种难以言喻的痛苦与坚韧。那早被遗忘的名字，那未被书写的故事，仍在历史的缝隙中低语，提醒着人们珍视自由与和平的宝贵。\n\n六四事件的记忆是复杂的，它既是对理想的追求，也是对历史的反思。在当今社会，面对不同的声音与思潮，我们更应铭记这段历史，以便在未来的路上，继续追寻那份属于每一个人的自由与尊严。\n\n\n\n', name:'序言，朦胧的记忆' },
+            { url: 'https://s2.loli.net/2024/08/20/6IAJ2LSQK4WZamc.jpg', text: '第一章·历史的涟漪', description: '風在耳邊說，六月\n六月是張黑名單\n我提前離席\n請注意告別方式\n那些詞的嘆息\n\n——北島《六月》', name:'第一章·历史的涟漪' },
+            { url: 'https://s2.loli.net/2024/08/20/hP1CXD743KW8f2F.jpg', text: '', description: '1986年学潮平息、1987年胡耀邦下台后，中国的政治改革完全停滞，而经济改革也遇上困难。知识界、民主派人士批判政府的声浪越发强烈。1989年1月6日，天体物理学家方励之致信邓小平，内文如下：\n\n「今年是中华人民共和国成立的第40年，也是五四运动的第70年，围绕着40年和70年，一定会有不少纪念活动，但是比之回顾过去，更多的人可能更关心今天，更关心未来，期待着两个纪念日会带来新的希望。\n\n鉴于此，我诚恳地向您建议，在这两个日子即将到来之际，在全国实行大赦，特别是释放魏京生以及所有类似的政治犯。我想，无论对魏京生本人如何评定，释放他这样的已经服刑大约十年的人，是符合人道的，是会促进良好的社会气氛的。\n\n今年恰好又是法国大革命200周年，不论怎样看由它所标志的自由、平等、博爱、人权已受到人类的普遍尊重。因此，我再次诚恳地希望您考虑我的建议，给未来增添新的希望。」\n\n此封公开信在知识界引发一连串回响，随后大批知识分子数次大规模联合上书、公开要求中央关注人权。与此同时，各国报纸亦广为刊载信件内容，引发国际关注。\n\n六四镇压之后，这封公开信成为当局指控方励之为幕后黑手的罪证之一。\n\n参考资料：《方励之文集》、《中国改革年代的政治斗争》、BBC中文网', name:'致信鄧小平' },
+            { url: 'https://s2.loli.net/2024/08/20/O8clTwuVqNFMSeR.jpg', text: '', description: '1989年2月，天体物理学家方励之发表《中国的失望和希望》一文，文章开头如此写道：「1989年是社会主义中国成立的第40年，同时它又是五四运动的70年。 这两个纪念日，可能正好象征着中国的失望和希望。」\n\n随后，方励之表示40年问题的根源在于社会主义制度，尽管改革10年带来变化，但从镇压西单民主墙开始，便能预感当局并不打算推动政治改革。 然而，潜在的冲突一直存在于社会中，当局认为社会主义是人类最民主的社会仅是一种欺骗。 如今，中国的希望在于越来越多人摆脱对当局的盲目希望，民主不再是口号，而是对当局的压力。 他呼吁当局应逐步接受政治民主、经济自由的改革。\n\n文末，方励之满怀希望写道：「中国的民主已走过很长的艰难的路，看来还将走相当长的艰难的路，也许要十年，也许要一代人，或更长。 但是，无论如何，民主的趋势在中国已经形成，很难再完全逆转了。 民主是争取来的，不是恩赐的。 这是五四运动以来的历史，这也是四十年来的历史，这也一定会是今后几十年中的历史。 正因此，我在被许多失望所困扰的今天，对未来仍然抱定了希望。」\n\n此信中文版在香港媒体刊登， 英文版则在美国 The New York Review（《纽约书评》）刊登，引起国际关注。 3月29日，王丹等一群推动「民主沙龙」活动的同学，于北京大学三角地张贴文章复印本，在校园掀起波澜，打破了八六学潮后的两年沉寂\n\n\n\n', name:'中国的失望和希望' },
+            { url: 'https://s2.loli.net/2024/08/20/JOZqcCzUQxHb6Fn.jpg', text: '', description: '1989年2月13日，在诗人北岛的发起、陈军出面下，北京文化界33人联署《致人大常委会及中共中央公开信》，回应一个多月前方励之的呼吁，支持在1949建政40周年暨五四运动70周年之际，赦免政治犯。\n\n公开信发出后，政府以新华社记者访问司法部负责人的形式作出反驳：「陈军等人发起写信提出要求释放魏京生，其实质是制造舆论，对政府施加压力，干涉国家的司法审判。」\n\n此信引发知识界对改革与民主的广泛讨论，成为酝酿八九学运的关键事件之一。\n', name:'联署公开信' },
+            { url: 'https://s2.loli.net/2024/08/20/4Nda2yZFXoQHY8v.jpg', text: '第二章·悼念与抗议', description: '春天的花朵凋零了\n风吹散了最后的希望\n黑夜里，星星隐没了\n只有泪水，仍在流淌', link:'' },
         ];
 
         let currentIndex = 1;
         let canSwitchImage = false;
         let isChanging = false;
+        let isSidebarOpen = false;
 
         function createImageElement(image, className) {
             const div = document.createElement('div');
@@ -344,7 +425,7 @@
             const newIndex = (currentIndex + direction + images.length) % images.length;
             
             if (newIndex === 0 || newIndex === images.length - 1) {
-                window.open(images[newIndex].link );
+                window.open(images[newIndex].link);
                 return;
             }
 
@@ -354,58 +435,136 @@
             const description = document.getElementById('description');
             
             const currentActive = container.querySelector('.active');
-            const targetElement = direction > 0 ? container.querySelector('.right') : container.querySelector('.left');
-            const oppositeElement = direction > 0 ? container.querySelector('.left') : container.querySelector('.right');
+            const newActive = direction > 0 ? container.querySelector('.right') : container.querySelector('.left');
+            const newSide = createImageElement(images[(newIndex + direction + images.length) % images.length], direction > 0 ? 'right' : 'left');
+
+            currentActive.className = `image-item ${direction > 0 ? 'left' : 'right'}`;
+            newActive.className = 'image-item active';
+            newSide.className = `image-item ${direction > 0 ? 'right' : 'left'}`;
+
+            if (direction > 0) {
+                container.appendChild(newSide);
+                container.removeChild(container.children[0]);
+            } else {
+                container.insertBefore(newSide, container.firstChild);
+                container.removeChild(container.lastChild);
+            }
 
             description.classList.remove('active');
+            setTimeout(() => {
+                description.textContent = images[newIndex].description;
+                description.classList.add('active');
+            }, 500);
 
-            currentActive.style.opacity = '0.7';
-            currentActive.style.filter = 'blur(5px) brightness(0.7)';
-            currentActive.style.width = '40%';
-            currentActive.style.height = '60%';
-            currentActive.style.transform = `translateX(${direction > 0 ? '-60%' : '60%'}) scale(0.8)`;
-
-            targetElement.style.opacity = '1';
-            targetElement.style.filter = 'blur(0) brightness(1)';
-            targetElement.style.width = '60%';
-            targetElement.style.height = '80%';
-            targetElement.style.transform = 'translateX(0) scale(1)';
-            targetElement.style.zIndex = '2';
-
-            oppositeElement.style.opacity = '0';
-            oppositeElement.style.transform = `translateX(${direction > 0 ? '-120%' : '120%'}) scale(0.8)`;
+            currentIndex = newIndex;
 
             setTimeout(() => {
-                currentIndex = newIndex;
-                updateGallery();
                 isChanging = false;
-            }, 1500);
+            }, 1000);
         }
 
-        document.addEventListener('click', (event) => {
-            if (!canSwitchImage) return;
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContainer = document.getElementById('mainContainer');
+            isSidebarOpen = !isSidebarOpen;
+            sidebar.classList.toggle('open', isSidebarOpen);
+            mainContainer.style.marginLeft = isSidebarOpen ? '300px' : '0';
+        }
 
-            const rect = document.querySelector('.gallery').getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            if (x < rect.width / 2) {
-                changeImage(-1);
-            } else {
-                changeImage(1);
+        function generateTableOfContents() {
+            const toc = document.getElementById('tableOfContents');
+    		  toc.innerHTML = ''; 
+            images.forEach((image, index) => {
+                if (index > 0 && index < images.length - 1) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.textContent = image.name || `图片 ${index}`;
+                    a.onclick = (e) => {
+                        e.preventDefault();
+                        jumpToImage(index);
+                    };
+                    li.appendChild(a);
+                    toc.appendChild(li);
+                }
+            });
+        }
+
+        function jumpToImage(index) {
+            if (index === currentIndex) return;
+            const direction = index > currentIndex ? 1 : -1;
+            const steps = Math.abs(index - currentIndex);
+            let currentStep = 0;
+
+            function stepChange() {
+                if (currentStep < steps) {
+                    changeImage(direction);
+                    currentStep++;
+                    setTimeout(stepChange, currentStep === steps - 1 ? 1000 : 500);
+                } else {
+                    toggleSidebar();
+                }
             }
+
+            stepChange();
+        }
+
+        function openChapter(chapterId) {
+            // This function would be implemented to open other chapters
+            console.log(`Opening chapter: ${chapterId}`);
+            // You can add logic here to load different chapters or navigate to different pages
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateGallery();
+            generateTableOfContents();
+            showWelcomeModal();
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#sidebar') && !e.target.closest('.menu-button')) {
+                    const container = document.getElementById('imageContainer');
+                    const rect = container.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const width = rect.width;
+
+                    if (x < width / 2) {
+                        changeImage(-1);
+                    } else {
+                        changeImage(1);
+                    }
+                }
+            });
         });
+    function handleKeyPress(e) {
+        if (e.key === "ArrowLeft") {
+            changeImage(-1);
+        } else if (e.key === "ArrowRight") {
+            changeImage(1);
+        }
+    }
 
-        document.addEventListener('keydown', (event) => {
-            if (!canSwitchImage) return;
-
-            if (event.key === 'ArrowLeft') {
-                changeImage(-1);
-            } else if (event.key === 'ArrowRight') {
-                changeImage(1);
-            }
-        });
-
+    document.addEventListener('DOMContentLoaded', () => {
         updateGallery();
-        window.addEventListener('load', showWelcomeModal);
+        generateTableOfContents();
+        showWelcomeModal();
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#sidebar') && !e.target.closest('.menu-button')) {
+                const container = document.getElementById('imageContainer');
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const width = rect.width;
+
+                if (x < width / 2) {
+                    changeImage(-1);
+                } else {
+                    changeImage(1);
+                }
+            }
+        });
+
+        document.addEventListener('keydown', handleKeyPress);
+    });
     </script>
 </body>
 </html>
