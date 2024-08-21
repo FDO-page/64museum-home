@@ -343,9 +343,8 @@
 
             const newIndex = (currentIndex + direction + images.length) % images.length;
             
-            // Check if the new index is the first or last image
             if (newIndex === 0 || newIndex === images.length - 1) {
-                window.open(images[newIndex].link, );
+                window.open(images[newIndex].link );
                 return;
             }
 
